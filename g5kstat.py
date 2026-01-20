@@ -1,12 +1,15 @@
 #!/usr/bin/python
 
+# TODO: add type hints
+# TODO: add more options
+
 import os
 import sys
 import requests
 from time import sleep
 from tabulate import tabulate
 import argparse
-from time import time, strftime, gmtime
+from time import time
 from datetime import datetime
 
 def ParseArgs():
@@ -66,15 +69,31 @@ def parse_cores(resources, args):
 
 def get_cores(jid, args):
 
-    ret = 0
+    ret = ""
 
 
-    ret = requests.get(api_job_url + "/" + str(jid), auth=g5k_auth).json()['resources_by_type']
-    for k, v in ret.items():
+    query = requests.get(api_job_url + "/" + str(jid), auth=g5k_auth).json()['resources_by_type']
+    for k, v in query.items():
         if k == 'cores':
             ret = parse_cores(v, args)
 
     return ret
+
+def get_time(time):
+
+    days = int(time // 3600 // 24)
+    remaining = time % (3600 * 24)
+
+    hours = int(remaining // 3600)
+    remaining = remaining % 3600
+
+    minutes = int(remaining // 60)
+    seconds = remaining % 60
+
+    if days > 0:
+        return f"{days}D+{hours:02d}:{minutes:02d}:{seconds:02.0f}"
+    else:
+        return f"{hours:02d}:{minutes:02d}:{seconds:02.0f}"
 
 # When querying the API from the frontends, users are already identified.
 # However, if using this script from the outside of Grid'5000, g5k_auth
@@ -92,12 +111,12 @@ jobs = requests.get(api_job_url + parameters, auth=g5k_auth).json()
 table = [(job['uid'],
           job['user'],
           job.get('name', '')[:args.textmax],
-          strftime("%H:%M:%S", gmtime(time() - job['submitted_at'])),
+          "not started" if job['started_at'] == 0 else get_time(time() - job['started_at']),
           job['state'],
           get_cores(job['uid'], args)
 
           )
          for job in jobs['items'][:max(0, args.results)]]
 
-print(tabulate(table, headers=["JOB ID", "USER", "NAME", "TIME UP", "STATE", "NODES AND CORES"], tablefmt="orgtbl"))
+print(tabulate(table, headers=["JOB ID", "USER", "NAME", "TIME SINCE START", "STATE", "NODES AND CORES"], tablefmt="orgtbl"))
 print(f"Total of {jobs['total']} jobs found (showing {min(max(0, args.results), jobs['total'])}).")

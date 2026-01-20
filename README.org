@@ -1,0 +1,9 @@
+#+STARTUP: content
+#+STARTUP: overview
+#+STARTUP: indent
+#+STARTUP: latexpreview
+#+TITLE: G5K queue status
+#+AUTHOR: Rayan Raddatz de Matos
+
+Small python script to get information the queue using the [[https://api.grid5000.fr/doc/stable/][Grid5000
+API]], in a format similar to the SLURM output.

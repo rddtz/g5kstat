@@ -29,6 +29,7 @@ def ParseArgs():
     parser.add_argument('-s', '--site', type=str.lower, default="", choices=SITES, required=False,  help='Site to query for')
     parser.add_argument('-f', '--free', required=False, action='store_true', help='Show free resources in the site')
     parser.add_argument('--dead', required=False, action='store_true', help='Show info about deda hosts also')
+    parser.add_argument('-u', '--user', required=False, default="", help='User to query jobs from')
 
     return parser.parse_args()
 
@@ -190,13 +191,15 @@ def get_time(time : int) -> str:
     else:
         return f"{hours:02d}:{minutes:02d}:{seconds:02.0f}"
 
-def queue(site : str, results : int, textmax : int) -> None:
+def queue(site : str, user : str, results : int, textmax : int) -> None:
     """Prints information about the job queue for a determinated site.
 
     Parameters
     ----------
     site : str
         Grid5000 Site for query (ex.: Grenoble)
+    user : str
+        Grid5000 user for query jobs from
     results : int
         Number of results in the output, maximun number of jobs to query for.
     textmax : int
@@ -204,7 +207,12 @@ def queue(site : str, results : int, textmax : int) -> None:
     """
 
     api_job_url = API_SITES + f"{site}/jobs"
-    parameters = f"?state=waiting,lauching,running,hold&limit={results}"
+
+    user_query = ""
+    if user != "":
+        user_query = f"user={user}&"
+    
+    parameters = f"?{user_query}state=waiting,lauching,running,hold&limit={results}"
     jobs = requests.get(api_job_url + parameters, auth=g5k_auth).json()
 
     table = [(job['uid'],
@@ -265,4 +273,4 @@ if __name__ == "__main__":
     if args.free:
         free(site, args.textmax, args.dead)
     else:
-        queue(site, args.results, args.textmax)
+        queue(site, args.user, args.results, args.textmax)
